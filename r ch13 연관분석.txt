@@ -1,0 +1,46 @@
+# 연관분석 사전단계
+install.packages('arules') 
+library(arules)
+
+# ppt 9p
+ex.1 = list(
+  c('우유','빵','버터'),
+  c('우유','버터','콜라'),
+  c('빵','버터','콜라'),
+  c('우유','콜라','라면'),
+  c('빵','버터','라면')
+)
+names(ex.1) = paste("Tr",c(1:5), sep = '')
+ex.1
+#transaction : 거래데이터 화하기 위한 변환 연관분석을 위한 apriori 함수를 이용하기 위해 변환시켜줌
+trans.1 = as(ex.1,'transactions')
+mode(trans.1)
+inspect(trans.1) # S4 type 의 데이터를 확인하기 위한 함수, 거래데이터의 연관규칙과 지수 계산
+image(trans.1) # 구매한, 하지 않은 물품을 시각적으로 쉽게 확인 가능
+
+rules.1 = apriori(trans.1,parameter=list(supp=0,conf=0,target='rule'))
+# apriori 함수를 이용하여 지지도,신뢰도,향상도를 확인할 수 있음
+# 초기값에 따라 지지도 0.1, 신뢰도 0.8 이상, 
+# 조건부의 최대 개수가 10 미만인 규칙만 출력하기 때문에 상황에 맞게 조절
+inspect(rules.1)
+rules.sub.1 = subset(rules.1,subset=rhs%pin%"빵") # lhs : 조건부, rhs : 결과부
+rules.sub.1 = subset(rules.1,subset=lhs%pin%"버터"&rhs%pin%"빵")
+inspect(rules.sub.1)
+
+# ppt 13p
+ex.2 = list(
+  c('소주','오징어','맥주'),
+  c('소주','오징어','퐁퐁'),
+  c('소주','우유'),
+  c('오징어','맥주'),
+  c('소주','오징어','맥주','퐁퐁'),
+  c('우유')
+)
+names(ex.2) = paste("Tr",c(1:6), sep = '')
+ex.2
+trans.2 = as(ex.2,'transactions')
+inspect(trans.2)
+image(trans.2)
+
+rules.2 = apriori(trans.2,parameter=list(supp=0.5,conf=0,target='rule'))
+inspect(rules.2)

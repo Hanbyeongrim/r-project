@@ -1,0 +1,88 @@
+# ch 9 DT programming
+library(tree)
+
+# 데이터 분할
+german=read.csv("german_credit.csv") # 데이터 불러오기
+str(german) # 데이터 구조 알아보기
+summary(german) # 범주형 변수를 보기위해 자료 요약
+cat=c(1,2,4,5,7:13,15:17,19:21) # 범주형 열만 가져오기 위해 열 번호를 저장
+german2=german # 같은 데이터를 하나 더 만듦
+german2[,cat]=data.frame(apply(german2[cat],2,as.factor)) # germen2의 cat 열(2)만 범주형 데이터프레임으로 저장
+set.seed(1234) # 난수 생성의 시작점 설정
+train_ind=sample(1:1000,size=700) # 1~1000중 700개 난수 생성
+gr.tr=german2[train_ind,] # 난수로 생성된 숫자의 열만 테스트 데이터로가져오기 
+gr.test=german2[-train_ind,] # 전체 데이터에서 train데이터 제외
+valid_ind=sample(nrow(gr.test),size=200) # test데이터 열중 200개 난수 생성
+gr.va=gr.test[valid_ind,] # 난수로 생성된 숫자의 열만 검증데이터로 가져오기
+gr.te=gr.test[-valid_ind,] # 난수로 생선된 숫자의 열만 제외하여 test데이터로 가져오기
+
+
+# 최적모형 찾기 전 모형의 성능 평가
+fit <- tree(Creditability ~ ., data=gr.tr) # 트리모형의 생성
+summary(fit) # 모형 요약
+plot(fit) # 모형의 그래프 그리기
+text(fit, pretty=0,cex=0.6) # 그래프에 변수 표시
+test_pred = predict(fit, gr.te, type = "class") # fit으로 gr.te를 분류로 예측
+table(gr.te$Creditability,test_pred) # 실제 분류와 에측값을 테이블로 표시
+
+# 정지규칙에 사용될 수 있는 옵션
+# 1) mincut :   자식노드에 포함될 수 있는 최소의 크기. 디폴트=5
+# 2) minsize:  노드의 최소크기, 디폴트 =10
+# 3) mindev:  노드가 분할하기 위해서는 노드 내 deviance크기가 mindev * deviance of root node 보다 작아야함.  디폴트=0.01
+
+fit0 <- tree(Creditability ~ ., data=gr.tr, minsize=2,mindev=0)  # 완전히 성장한 나무 
+summary(fit0) # 모형 요약
+plot(fit0) # 모형 그래프 그리기
+text(fit0, pretty=0,cex=0.6) # 그래프에 변수 표시
+train_pred = predict(fit0, gr.te, type="class") # fit0로 gr.tr을 분류로 예측
+table(gr.tr$Creditability,train_pred) # 실제 분류와 에측값을 테이블로 표시
+
+# 가지치기에 사용될 수 있는 함수
+# 1) snip.tree() : 특정 노드를 지정하고 수동으로 제거할 수 있음, 잎노드 말고 가지노드를 지정해야 함
+# 2) prune.tree(): 불순도 함수를 deviance로 하고 최적의 가지치기를 함
+# 3) prune.misclass(): 불순도 함수를 오분류율(misclassification rate)로 하고 최적의 가지치기를 함
+
+# node 12, 7 제거
+fit1=snip.tree(fit,nodes=c(12,13)) # fit모형의 12,13노드를 잘라낸다
+plot(fit1)
+text(fit1,all=T)
+
+fit1=snip.tree(fit) # 직접 마우스 클릭으로 지우기
+
+fit2=prune.tree(fit,newdata=gr.va) # 오분류율을 평가하며 가지치기모형 나타냄
+fit2         #size: 끝마디의 수, k: 나무크기에 따른 벌점요인
+plot(fit2)   # size 대 오분류율 그림
+
+fit4=prune.tree(fit,newdata=gr.va, method="misclass") # 오분류율을 평가하며 가지치기모형 나타냄
+fit4 
+plot(fit4)
+
+out=prune.tree(fit, newdata=gr.va, best=13) 
+out_pred=predict(out, gr.te, type="class")
+table(gr.te$Creditability, out_pred)
+
+plot(out)
+text(out, all=T)
+
+#신용을 평가하는데 Account_Balance와 Duration.of.Credit..month가 중요함
+
+out1=prune.tree(fit, newdata=gr.va, best=3) 
+# partition.tree(out1, add=TRUE, cex=1.5)
+
+
+plot(german[,2], german[,3], type="p", pch=19, xlab="Account Balance", ylab="Duration of Credit",col=german[,1]+3)
+abline(h=22.5,v=2.5)
+
+
+set.seed(0520)
+cvgr=cv.tree(fit, K=10) # 데이터를 10등분하여 트리모형 반복
+plot(cvgr)
+
+cvgr
+
+prune.tree(fit,newdata=gr.va, best=4)
+plot(german[,4], german[,3], type="p", pch=19,xlab="Payment Status", ylab="Duration of Credit",col=german[,1]+12)
+abline(v=1.5, h=22.5)
+
+# 잎노드 작으면 예측오차 높아짐
+

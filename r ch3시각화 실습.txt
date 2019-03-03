@@ -1,0 +1,96 @@
+
+#  week3-2
+#  ???3??? ????????? ???각화(Data visualization)
+
+install.packages("MASS");library(MASS)
+data(Boston)
+str(Boston)
+
+
+# 그림 3.1 (p66)
+
+cat.medv=as.numeric(Boston$medv>=30)
+
+plot(Boston$lstat, Boston$medv, cex=0.01)
+
+avg.medv=tapply(Boston$medv, Boston$chas, mean)
+barplot(avg.medv, xlab="CHAS", ylab="Average medv", ylim=c(0,30))
+
+prop.medv=tapply(cat.medv, Boston$chas, mean)
+barplot(prop.medv, xlab="CHAS",  ylab="% of  cat.medv", ylim=c(0,1))
+
+prop.chas=table(Boston$chas)
+barplot(prop.chas,  xlab="CHAS")
+
+#그래프 행렬 숫자 주의
+par(mfrow=c(1,1))
+
+# 그림 3.2 (p68)
+hist(Boston$medv, nclass=20)
+#boxplot(y~x)
+boxplot(Boston$medv~Boston$chas, ylim=c(0,60), xlab="CHAS", ylab="medv")
+
+
+#그림 3.3 (p69)
+install.packages("ggplot2");library(ggplot2)
+install.packages("reshape2");library(reshape2)
+?melt
+#melt use=p 피어슨 상관계수를 사용/ 데이터를 측정치로 저장
+melt(cor(Boston, use="p"))
+
+qplot(x=Var1, y=Var2, data=melt(cor(Boston, use="p")), fill=value, geom="tile") +
+scale_fill_gradient2(limits=c(-1, 1))
+
+install.packages("ellipse");library(ellipse)
+#상관계수를 타원형으로 출력
+plotcorr(cor(Boston))
+
+#그림 3.4 (p70)
+install.packages("cutoffR");library(cutoffR)
+cleansing=read.csv("cleansing.csv")
+HeatStruct(cleansing[1:300,c(31:40)])
+HeatStruct(cleansing[1:300,c(38:42)], missing.col="black")
+
+# 그림 3.5 -좌측 (p71)
+# 색도 변수로 지정하여 총 3개 변수 출력
+qplot(Boston$lstat,Boston$nox, colour=cat.medv, xlab="lstat", ylab="nox")
+# 모양을 변수로 지정하여 3개 변수 출력
+qplot(Boston$lstat,Boston$nox, shape=factor(cat.medv), xlab="lstat", ylab="nox")
+# 색과 모양 변수로 지정하여 4개 변수 출력
+qplot(Boston$lstat,Boston$nox, colour=cat.medv, shape=factor(Boston$chas), xlab="lstat", ylab="nox")
+
+qplot(Boston$lstat,Boston$tax, size=Boston$medv, xlab="lstat", ylab="nox")
+qplot(Boston$lstat,Boston$tax, size=cat.medv, xlab="lstat", ylab="nox")
+qplot(Boston$lstat,Boston$tax, size=cat.medv, colour=I("pink"), xlab="lstat", ylab="nox")
+
+
+# 그림 3.5 -???른쪽 (p71)
+install.packages("lattice");library(lattice)
+# factor(반드시 범주)에 따라 medv를 보고싶다
+histogram(~medv | factor(chas), data=Boston)
+
+boston=Boston[,c(4,9,14)]
+rad=as.factor(Boston$rad)
+melted=melt(boston, id.var=c("chas","rad"), measure.vars="medv" )
+
+install.packages("plyr");library(plyr)
+melted.means=ddply(melted, c("chas","rad"), summarize, mean=mean(value))
+melted.means
+
+barchart(mean~factor(rad)|chas,data=means)
+barchart(mean~factor(rad)|chas, layout=c(0,2),data=means, ylab="avg(medv)",xlab="rad" )
+barchart(mean~factor(rad)|chas, layout=c(1,2),data=means, ylab="avg(medv)",xlab="rad")
+
+# 그림 3.6
+plot(Boston,cex=0.1)
+plot(Boston[,c(1,3,13,14)], cex=0.2)
+
+# ???관계수 ????????? ????????????
+# http://www.sthda.com/english/wiki/ggplot2-quick-correlation-matrix-heatmap-r-software-and-data-visualization
+
+# 그림 3.11( parallel coordinates plot)
+parallel(~Boston[c(1:13)]|factor(chas), data=Boston)
+??parallel
+
+
+

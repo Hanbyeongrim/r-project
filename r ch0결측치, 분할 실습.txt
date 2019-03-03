@@ -1,0 +1,92 @@
+
+# week2-2
+
+# ë°œí‘œ ??€ ? •?•˜ê¸?
+set.seed(7)
+team=matrix(0,4,12)
+team
+a=sample(48)
+a
+for (i in 1:12){
+  team[,i]=a[(4*(i-1)+1):(4*i)]  
+                   }
+team
+
+# ?°?´?„° ë¶ˆëŸ¬?˜¤ê¸?
+cleansing=read.csv("cleansing.csv")
+head(cleansing)
+tail(cleansing)
+str(cleansing)
+#$ : Å¬¸°Â¡ÀÇ x.1º¯¼ö Ãâ·Â
+cleansing$X.1
+
+cleansing[,1]
+# ê²°ì¸¡ì¹? 
+colSums(is.na(cleansing)) # ê°? ë³€?ˆ˜ë³? ê²°ì¸¡ì¹˜ì˜ ê°œìˆ˜
+rowSums(is.na(cleansing)) # ê´€ì¸¡ì¹˜ë³? ê²°ì¹™ì¹˜ì˜ ê°??ˆ˜
+
+mean(cleansing$Para39)
+mean(cleansing$Para39, na.rm=T)
+
+cleansing2=na.omit(cleansing) 
+dim(cleansing2)
+
+summary(cleansing)  # data summary
+
+# ?´?ƒì¹˜ì— NA ??€?…
+
+clean=cleansing
+clean$Para73[clean$Para73==9999]=NA
+clean$Para74[clean$Para74==9999]=NA
+summary(clean[,76:77])
+hist(clean$Para70)
+hist(clean$Para70, nclass=100)
+boxplot(clean$Para70)
+
+for(i in 1:10){hist(clean$Para01, nclass=i)} 
+#?€œAPPLY?€í•¨?ˆ˜?“¤ : ë²¡í„°, ?–‰? ¬, ë¦¬ìŠ¤?Š¸, ?°?´?„° ?”„? ˆ?„ ?“±?— ?„?˜?˜ ?•¨?ˆ˜ë¥? ? ?š©?•œ ê²°ê³¼ë¥? ?–»ê¸? ?œ„?•œ ?•¨?ˆ˜?“¤ 
+# apply, lappy, sapply, tapply
+
+#apply(?°?´?„°, margin, ?•¨?ˆ˜)
+apply(is.na(cleansing),2,sum)   #colSums()
+apply(is.na(cleansing),1,sum)   #rowSums()
+
+
+# ê·¸ë£¹ë³? ì²˜ë¦¬ë¥? ?œ„?•œ apply?•¨?ˆ˜
+# tapply(?°?´?„°,?ƒ‰?¸,?•¨?ˆ˜)
+
+table(cleansing2$y)
+tapply(cleansing2$Para01, cleansing2$y, mean)
+
+
+
+# ?‹œê°„ë³„ ì²˜ë¦¬ë¥? ?œ„?•œ apply ?•¨?ˆ˜
+
+index1=substr(cleansing2$Time,1, 10) # ?‚ ì§œë?€?ˆ˜?—?„œ ?‚ ì§œë§Œ êº¼ë‚´ê¸?
+index2=substr(cleansing2$Time,1, 13) # ?‚ ì§œë?€?ˆ˜?—?„œ ?‚ ì§?-?‹œê°? êº¼ë‚´ê¸?
+
+tapply(cleansing2$Para01, index1, mean)
+tapply(cleansing2$Para01, index2, mean)
+
+
+# ?°?´?„° ë¶„í• (Data Partitioning)
+
+housing=read.csv("BostonHousing.csv")
+cor(housing)
+round(cor(housing),1)
+smp.size=floor(0.75 * nrow(housing))
+#floor ~ gauss
+floor(20.1)
+
+## set the seed to make your partition reproducible(7:2:1)
+set.seed(123)
+train_ind=sample(nrow(housing), size = smp.size)
+train_ind
+train=housing[train_ind, ]
+test=housing[-train_ind, ]
+
+smp.size2=floor(0.2*nrow(train))
+vld_ind=sample(nrow(train), size=smp.size2)
+valid=train[vld_ind,]
+train2=train[-vld_ind,]
+

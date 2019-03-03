@@ -1,0 +1,85 @@
+setwd("~/Documents/2016-1학기 강의/데이터마이닝")
+
+# 표14.1 데이터(p331)
+public=read.csv("public.csv")
+
+#그림 14.1(p330)
+#중요한 두가지정도만 잡아서 보기
+plot(public$Sales, public$FuelCost,
+     xlab="Sales", ylab="Fuel Cost",
+     xlim=c(0,20000),ylim=c(0,3),
+     cex = 1, lty = "solid", pch=19) 
+text(public$Sales, public$FuelCost,labels=public$Company, cex=0.7, pos=4)
+
+# 표14.2 매출액과 연료비에 대한 표준화(p334)
+# 변수간 단위 차이 때문에 표준화 필요
+public2=public[,c(6,8)]
+#scale 표준화 시켜주는 함수
+public3=scale(public2)
+rownames(public3)=public$Company
+public3
+
+# 표14.3 유클리드 거리 사용
+#dist 거리구하는 함수 디폴트가 유클리드 거리
+#binary가 자카드계수
+x=dist(public3) # Euclidean distance
+x2=as.matrix(x)
+as.dist(x2[1:5,1:5],diag=TRUE) #표14.3
+
+# 다양한 거리 계산하기
+dist(x,method="manhattan")
+dist(x,method="maximum")
+
+x=c(1,1,1,1)
+y=c(1,0,1,1)
+dist(rbind(x,y),method="binary") # 1-Jaccard
+
+
+#Hierachical clustering(계층적 군집화)
+#hclust 계층적 응집 군집화
+#거리 데이터가 와야 함
+h1=hclust(dist(public3), method="single")
+plot(h1,hang = -1)
+#rect.hclust : k개 군집을 보여줌
+rect.hclust(h1, k=3)
+groups <- cutree(h1, k=3)
+
+
+h2=hclust(dist(public3), method="complete")
+plot(h2,hang = -1)
+
+h3=hclust(dist(public3), method="average")
+plot(h3)
+
+# 계층적 군집분석 결과 표현 1
+plot(public$Sales, public$FuelCost,
+     xlab="Sales", ylab="Fuel Cost",
+     xlim=c(0,20000),ylim=c(0,3),
+     cex = 1, lty = "solid", pch=19) 
+text(public$Sales, public$FuelCost,labels=groups, cex=0.7, pos=4)
+
+# 계층적 군집분석 결과 표현 2
+plot(public$Sales, public$FuelCost,
+     xlab="Sales", ylab="Fuel Cost",
+     xlim=c(0,20000),ylim=c(0,3),
+     cex = 1, lty = "solid", pch=19, col=groups) 
+
+
+# 표14.2 매출액과 연료비에 대한 표준화(p334)
+public2=public[,c(1:8)]
+public3=scale(public2)
+#rownames(public3)=public$Company
+public3
+
+
+# 그림 14.3
+h1=hclust(dist(public3), method="single")
+plot(h1,hang=-1)
+rect.hclust(h1, k=6)
+groups <- cutree(h1, k=6)
+
+
+# 그림 14.1
+h1=hclust(dist(public3), method="average")
+plot(h1,hang=-1)
+rect.hclust(h1, k=6)

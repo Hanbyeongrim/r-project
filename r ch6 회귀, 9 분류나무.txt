@@ -1,0 +1,127 @@
+#--------------------------------------------------------------------
+# 중간고사 Q5
+#--------------------------------------------------------------------
+x1=c(1,2,2,3,3,4,5,5,6,7,7,8,8,9)
+x2=c(5,6,7,7,8,8,1,9,2,2,3,3,4,5)
+y=c(1,1,2,1,2,1,2,1,2,1,2,1,2,2)
+q5=data.frame(cbind(x1,x2))
+
+# 오차항 그리기
+
+library(class)
+error=rep(0,14)
+for (k in 1:length(y)){
+  out=knn(q5,q5,y,k,prob=TRUE)
+  error[k]=1-mean(y==out)
+}
+error # See p170
+
+
+# KNN의 경계 나타내기
+# x1과 x2의 가능한 범위에서 격자점 찾기 
+z1=seq(from=1, to=10,  by=0.1)
+z2=seq(from=1, to=10,  by=0.1)
+#격자점을 데이터로 받음
+new=expand.grid(z1,z2)
+
+out2=knn(q5,new,y,k=1,prob=TRUE)
+prob=attr(out2,"prob")
+prob=ifelse(out2=="1",prob,1-prob)
+prob1=matrix(prob,length(z1),length(z2))
+#contour : 3개 변수에 대한 그래프
+contour(z1,z2,prob1,levels=0.5,labels="",xlab="",ylab="") 
+points(q5, pch=19, col=ifelse(y==1, "red", "blue")) #학습용집합 
+gd <- expand.grid(x=z1, y=z2)
+points(gd, pch=".", cex=1.2, col=ifelse(prob1>0.5, "red", "blue"))
+
+
+
+#--------------------------------------------------------------------
+# Ch 6 회귀모형 변수선택법
+#--------------------------------------------------------------------
+prostate=read.csv("http://www.biostat.jhsph.edu/~ririzarr/Teaching/649/Data/prostate.csv")
+prostate=prostate[c(-1)]
+
+# 가능한 모든 회귀모형 탐색법
+#로지스틱 bestglm
+install.packages("leaps")
+library(leaps)
+null=lm(lcavol~1,data=prostate)
+full=lm(lcavol~.,data=prostate)
+
+# regsubsets()의 경우 결과값을 보기위해서는 summary된 결과를 보아야 함.
+# 모형이 각 모형을 적합하는 것이 아니므로, 각 모형을 적합하기 위해서는 <coef()함수를 사용>
+#nbest : 예측변수의 개수에 따라 (M_i 에서) 적합할 모형의 개수: 즉 i=1일 때, nbest=2라면 예측변수가 1개인 모형들 중 가장 적절한 두 개의 모형을 기록함
+fit=regsubsets(lcavol~., data=prostate, nbest=1)  
+fit1=summary(fit) 
+names(fit1)  # regsubsets의 함수의 결과값으로 어떤 정보가 저장되어 있는지 알려줌
+out=with(fit1,round(cbind(which,rsq,adjr2,cp,bic),3))  
+
+#regsubsets의 결과값을 그림 #검은색:모형에 포함되는 변수 흰색:모형에서 제외되는 변수
+#bic 작은게 좋음
+plot(fit,scale="bic")  
+plot(fit,scale="r2")  
+plot(fit,scale="Cp")  
+
+
+plot(fit1$cp, xlab = "Number of Variables", ylab = "Cp")
+which.min(fit1$cp)
+points(4, fit1$cp[4], pch = 20, col = "red")
+
+coef(fit, 4)
+
+
+# 전진선택법
+fit.fwd=step(null, scope=list(lower=null, upper=full), direction="forward")
+summary(fit.fwd) 
+
+
+# 후진소거법
+fit.bwd=step(full,  direction="backward")
+summary(fit.bwd)
+
+#단계적선택법 
+
+fit.step=step(null, scope=list(upper=full),direction="both")
+summary(fit.step)
+
+# ch 9 분류회귀나무
+
+#Tree Package 설치
+install.packages("tree")
+library(tree)
+
+# 데이터 불러오기
+riding=read.csv("RidingMowers.csv")
+plot(riding[,1:2],col=as.integer(riding$Ownership))
+
+
+# 분류나무 적합 (default setting)
+fit0=tree(Ownership~Income+Lot_Size,riding)
+#deviation 불순도
+#알파벳 순이라 논 오너가 기준
+#각 조건은 and로 연결
+fit0          # 조건문으로 적합결과 보여줌
+#그래프 내려가는 길이가 불순도 감소량
+plot(fit0)    # 나무모형 그림을 보여줌 
+#all 우세한 집합을 표시
+text(fit0,all=T) # 나무모형의 기준을 나타냄
+
+# 분류나무 적합 조절인자 
+#mincut: child node의 데이터 크기 default=5
+#minsize: 각 node의 최소데이터 크기 defualt=10
+#mindev: 노드 내 최소분할 불순도의 크기는 이 값 곱하기 root node에서의 불순도
+#mindev=0, minsize=2로 하여 완전 성장한 나무모형을 얻음
+
+# 분류나무 적합(완전성장한 나무)
+fit1=tree(Ownership~Income+Lot_Size,riding, mindev=0, minsize=2)
+fit1
+plot(fit1)
+text(fit1,all=T)
+
+# 분할기준 바꾸기
+fit2=tree(Ownership~Income+Lot_Size,split="gini",riding) # 나무모형 적합
+fit2
+
+plot(fit2)
+text(fit2,all=T)

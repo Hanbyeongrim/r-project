@@ -1,0 +1,54 @@
+# 7. KNN Method
+
+rm1=read.csv("RidingMowers.csv")
+
+# box plots of the features stratified by ownership
+
+par(mfrow=c(1,2))
+
+plot(Income~Ownership, data=rm1)
+
+plot(Lot_Size~Ownership, data=rm1)
+
+# KNN model fitting
+
+nearest1=knn(train=rm1[,1:2],test=c(60,20),cl=rm1[,3],k=1)
+
+nearest3=knn(train=rm1[,1:2],test=c(60,20),cl=rm1[,3],k=3)
+
+nearest7=knn(train=rm1[,1:2],test=c(40,15),cl=rm1[,3],k=7)
+
+
+# Figure 7.1 on page 169
+
+
+plot(rm1[,1:2],col=rm1$Ownership, main="1-NN")
+
+points(60,20, bg=nearest1, pch=21, col=grey(0.9), cex=1.25)
+
+
+plot(rm1[,1:2],col=rm1$Ownership, main="5-NN")
+
+
+points(60,20, bg=nearest5, pch=21, col=grey(0.9), cex=1.25)
+
+plot(rm1[,1:2],col=rm1$Ownership, main="7-NN")
+
+
+points(40,15, bg=nearest7, pch=21, col=grey(0.9), cex=1.25)
+
+
+# Figure 7.2 on page 170
+
+
+err=rep(0,18)
+for (k in 1:18) {
+	pred=knn(train=rm1[,1:2], test=rm1[,1:2], cl=rm1[,3], k)
+	err[k]=100*sum(rm1$Ownership!=pred)/24 
+}
+
+err
+
+
+
+

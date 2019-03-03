@@ -1,0 +1,102 @@
+# 14장 군집분석
+# 표14.1 데이터(p331)
+public=read.csv("public.csv")
+head(public)
+# 22개 공공 사업체표준화(p349)
+
+public2=scale(public[,1:8])
+
+public2
+h1=hclust(dist(public2), method="single")
+plot(h1,hang=-1)
+#dividing group
+groups <- cutree(h1, k=6)
+#companies number ordering by groups number
+ind=order(groups)
+
+data.frame(public$Company[ind],groups[ind])
+?kmeans
+# 계층적 군집분석 결과로부터 중심점 찾기
+# 2 : 열로 계산
+clust=apply(public2, 2, function(x) tapply (x, groups, mean))
+
+# 그림 14.5 (p350)
+
+# K-means 이해하기 ( 두번 돌려보기)
+# nstart : center를 군집수가 아닌 군집의 중심점(행렬)로 줬을 때 사용
+# 디폴트는 1로 중심을 랜덤하게 잡음. 그래서 set.seed해야 함.
+# 같은 애들이 같은 군집에 계속 묶이면 잘 된 것.
+out=kmeans(public2,6)
+table(public$Company,out$cluster )
+
+# K-means 적용하기
+out2=kmeans(public2,clust)
+out2$cluster
+# 군집 중점
+out2$centers
+# 군집 원소 수
+out2$size
+public2=as.data.frame(public2)
+plot(public2$Sales,public2$FuelCost,col=out2$cluster)
+points(out2$centers[,c(6,8)],pch=16)
+
+
+install.packages("lattice");library(lattice)
+# 그림 14.7( parallel coordinates plot, p351) 
+parallelplot(~out2$centers, horizontal.axis = FALSE)
+
+
+#----------------------------------------------------
+#7장 KNN method
+#---------------------------------------------------
+
+mower=read.csv("RidingMowers.csv")
+mower=mower[,1:3]
+#그림 7.1 (p169)
+plot(mower$Income, mower$Lot_Size,col=mower$Ownership,
+     xlab="Income", ylab="Size",
+     xlim=c(20,120),ylim=c(13,25),
+     cex = 1, lty = "solid", pch=19) 
+points(60,20, cex=1, pch=4)
+
+# 데이터 분할(Data Partitioning)
+
+y=mower[,3]
+smp.size=floor(0.70*length(y))
+
+## set the seed to make your partition reproductible
+set.seed(0407)
+tr.ind=sample(length(y), size = smp.size)
+#x로만 데이터 셋을 구성해야 함
+train=mower[tr.ind,-3]
+test=mower[-tr.ind,-3]
+library(class)
+n1=knn(train,test,y[tr.ind],k=1)
+n3=knn(train,test,y[tr.ind],k=3)
+data.frame(test,n1,n3,y[-tr.ind])
+
+
+plot(train,col=y[tr.ind],cex=0.5, main="1-NN method")
+points(test,bg=n1,pch=21,col=grey(0.9),cex=1.25)
+
+
+plot(train,col=y[tr.ind],cex=0.5, main="3-NN method")
+points(test,bg=n3,pch=21,col=grey(0.9),cex=1.25)
+
+
+
+# 정확도 계산
+acc1=mean(y[-tr.ind]==n1)
+acc3=mean(y[-tr.ind]==n3)
+
+# 오분류율  그림 7.2 (p170)
+
+err1=rep(0,nrow(train))
+err2=rep(0,nrow(train))
+for ( k in 1:nrow(train)){
+    pred1=knn(train,train,y[tr.ind], k)
+    pred2=knn(train,test, y[tr.ind], k)
+    err1[k]=1-mean(y[tr.ind]==pred1)
+    err2[k]=1-mean(y[-tr.ind]==pred2)
+}
+data.frame(1:nrow(train),err1,err2)

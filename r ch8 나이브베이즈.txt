@@ -1,0 +1,161 @@
+# 8. The Naive Bayesian Method
+# reading the data
+del <- read.csv("FlightDelays.csv")
+head(del);str(del)
+#날짜, 거리는 범주형이 아니라 제외
+barplot(table(del$delay),col=c("skyblue","hotpink"),axes=F)
+naive_guess <- mean(del$delay=="delayed")
+
+# schedf 변수와 타겟 변수의 처리
+#비행시간의 시간만 가져오기(변수변환의 일종)
+del$schedf <- factor(floor(del$schedtime/100))
+#문자를 0,1로 변환
+del$delay <- del$delay=="delayed"
+str(del)
+del <- del[,c(14,2,4,8,9,10,13)]
+
+# determining test and evaluation data sets
+set.seed(20160428)
+n <- dim(del)[1]
+n
+n1 <- floor(n*(0.6)) #트레이닝셋은 데이터의 0.6
+n1
+n2 <- n-n1           #테스트셋은 0.4
+n2
+num_train <- sample(1:n,n1,) # 1~n의 숫자 중 n1개를 생성, 
+train <- del[num_train,]
+dim(train)
+test <- del[-num_train,]
+dim(test)
+
+## determining marginal probabilities
+str(train)
+Y_0_train <- train[train[,7]==0,] # ontime flight
+Y_1_train <- train[train[,7]==1,] # delayed flight
+#train2<-split(train,train$delay)
+
+# Figure 8.1 on page 186
+# 먼저 구해야할 확률들을 생각해본다.
+# 각 Y의 클래스에 속할 확률, Y가 주어졌을 때 각각의 X들의 확률들
+# prior probabilities/ 트레이닝 셋에서의 P(Y)의 추정량
+train$delay<-factor(train$delay,labels=c("ontime","delayed"))
+tdel=table(train$delay)/sum(table(train$delay))
+tdel
+
+# scheduled time (DEP_TIME_BLK)
+# Y=0(ontime)일 때의 schedf의 확률 추정(조건부 확률)
+table(Y_0_train[,1])
+ts0 <- table(Y_0_train[,1])/sum(table(Y_0_train[,1]))
+ts0
+
+# Y=1(delayed)일 때의 schedf의 확률 추정(조건부 확률)
+table(Y_1_train[,1])
+ts1 <- table(Y_1_train[,1])/sum(table(Y_1_train[,1]))
+ts1
+
+# scheduled carrier
+table(Y_0_train[,2])
+tc0 <- table(Y_0_train[,2])/sum(table(Y_0_train[,2]))
+tc0
+table(Y_1_train[,2])
+tc1 <- table(Y_1_train[,2])/sum(table(Y_1_train[,2]))
+tc1
+
+# scheduled destination
+table(Y_0_train[,3])
+td0 <- table(Y_0_train[,3])/sum(table(Y_0_train[,3]))
+td0
+table(Y_1_train[,3])
+td1 <- table(Y_1_train[,3])/sum(table(Y_1_train[,3]))
+td1
+
+# scheduled origin
+table(Y_0_train[,4])
+to0 <- table(Y_0_train[,4])/sum(table(Y_0_train[,4]))
+to0
+table(Y_1_train[,4])
+to1 <- table(Y_1_train[,4])/sum(table(Y_1_train[,4]))
+to1
+
+# weather
+table(Y_0_train[,5])
+tw0 <- table(Y_0_train[,5])/sum(table(Y_0_train[,5]))
+tw0
+
+#모든 케이스가 0의 값을 가지는 경우, 구체적으로 주어진 Y=0에서 weather가 1일 확률이 0임을 입력 
+tw0[2] <- 0
+names(tw0)<-c(0,1)
+tw0
+table(Y_1_train[,5])
+tw1 <- table(Y_1_train[,5])/sum(table(Y_1_train[,5]))
+tw1
+
+#scheduled day of week
+table(Y_0_train[,6])
+tt0 <- table(Y_0_train[,6])/sum(table(Y_0_train[,6]))
+tt0
+table(Y_1_train[,4])
+tt1 <- table(Y_1_train[,6])/sum(table(Y_1_train[,6]))
+tt1
+
+# 위 작업들은 트레이닝셋을 이용해 모형을 생성하는 작업
+# figure 8.1
+t1<-cbind(tc1,tc0)
+t1<-rbind(t1,cbind(tt1,tt0))
+t1<-rbind(t1,cbind(ts1,ts0))
+t1<-rbind(t1,cbind(td1,td0))
+t1<-rbind(t1,cbind(to1,to0))
+t1<-rbind(t1,cbind(tw1,tw0))
+
+
+# 이제 테스트셋에 적용해서 그 성능을 확인해보자
+str(test)
+
+## creating predictions, stored in gg
+
+p0 <- ts0[test[,1]]*tc0[test[,2]]*td0[test[,3]]*to0[test[,4]]*
+  tw0[test[,5]]*tt0[test[,6]]
+
+# 오류가 발생, 그 이유는 weather 변수가 0,1 정수로 입력돼있기 때문 / vector[0]=?
+# 맑음: 0에서 1로, 흐림: 1에서 2로
+
+p0 <- ts0[test[,1]]*tc0[test[,2]]*td0[test[,3]]*to0[test[,4]]*
+  tw0[test[,5]+1]*tt0[test[,6]]
+
+p1 <- ts1[test[,1]]*tc1[test[,2]]*td1[test[,3]]*to1[test[,4]]*
+  tw1[test[,5]+1]*tt1[test[,6]]
+#분모는 동일함
+yhat=(p1*tdel[2])/(p1*tdel[2]+p0*tdel[1])
+
+hist(yhat) 
+#abline이 컷오프가 됨. 관심 클래스에 따라 조절
+plot(test$delay,yhat);abline(h=0.5)
+plot(test$delay,yhat);abline(h=0.3)
+plot(test$delay,yhat);abline(h=0.7)
+
+# lift chart
+
+lift <- cbind(test[,7],yhat)
+rownames(lift)<-1:881
+lift
+sorted_yhat <- sort(lift[,2],decreasing=T)
+sorted_test <- lift[names(sorted_yhat),]
+plot(1:dim(yhat),cumsum(sorted_test[,1]),type="l",xlab="# 사례의 수",ylab="누적값")
+abline(b=mean(test[,7]),a=0)
+
+## coding as 1 if probability 0.5 or larger
+yhat1 <- (yhat>=0.5)
+err.tab_0.5 <- table(test$delay,yhat1)
+#오분류율
+(err.tab_0.5[1,2]+err.tab_0.5[2,1])/sum(err.tab_0.5)
+
+## coding as 1 if probability 0.3 or larger
+yhat2 <- (yhat>=0.3)
+err.tab_0.3 <- table(test$delay,yhat2)
+(err.tab_0.3[1,2]+err.tab_0.3[2,1])/sum(err.tab_0.3)
+
+## coding as 1 if probability 0.7 or larger
+yhat3 <- (yhat>=0.7)
+err.tab_0.7 <- table(test$delay,yhat3)
+(err.tab_0.7[1,2]+err.tab_0.7[2,1])/sum(err.tab_0.7)
+naive_guess2<-table(test[,7])/sum(table(test[,7]))

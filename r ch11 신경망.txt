@@ -1,0 +1,75 @@
+#은닉계층 1개인 경우
+install.packages("nnet")
+library(nnet)
+#은닉계층 2개 이상인 경우
+install.packages("neuralnet")
+library(neuralnet)
+data(Boston)
+
+# Table 11.1 데이터 입력 
+x1=c(0.2,0.1,0.2,0.2,0.4,0.3)
+x2=c(0.9,0.1,0.4,0.5,0.5,0.8)
+y=c(1,0,0,0,1,1)
+taste=data.frame(cbind(x1,x2,y))
+
+# Fit sinle layer perceptron 
+# nnet arguments
+# rang: uniform[-rang, rang]에서 초기 가중치 랜덤추출 
+#decay:   # default=0
+# maxit: 몇번 반복하겠는가 maximum number of iterations: default=100
+fit1=nnet(y~., data=taste, size=3, rang=0.1,decay=5e-4)  # size: no. of nodes in hidden layer
+summary(fit1)
+#summary결과 i: input/ o: out/ b: bias 숫자는 가중치
+
+fit2=nnet(y~., data=taste, size=3, rang=0.1,decay=5e-4, maxit=200)  # size: no. of nodes in hidden layer
+summary(fit2)
+
+fit3=nnet(y~., data=taste, size=3, rang=0.1, maxit=200)  # size: no. of nodes in hidden layer
+summary(fit3)
+#converged : 가중치가 수렴되서 멈춤/ stop 수렴이 안되서 지정된 maxit에서 멈춤
+names(fit3)
+
+par(mfrow=c(1,3))
+plot(fit1$residual)
+plot(fit2$residual)
+plot(fit3$residual)
+
+# Boston data
+data(Boston)
+
+# 데이터 전처리 (p271)
+# na 존재 찾기
+apply(Boston,2,function(x) sum(is.na(x)))
+
+index <- sample(1:nrow(Boston),round(0.75*nrow(Boston)))
+train <- Boston[index,]
+test <- Boston[-index,]
+
+a=apply(Boston,2,min)
+b=apply(Boston,2,max)
+
+normdat=as.data.frame(scale(Boston,center=a,scale=b-a)) 
+
+train2=normdat[index,]
+test2=normdat[-index,]
+#neuralnet은 y~. 에서와 같은 .이 안되서 변수명 일일히 써야 함
+#hidden=c(2,3) 은닉계층이 첫번째는2, 두번째는 3개
+#은닉계층 계층수와 노드수?? 계층은 보통 2개
+out=neuralnet(medv~crim+zn+indus+chas+nox+rm+age+dis+rad+tax+ptratio+black+lstat,data=train2,
+ hidden=c(2,3), linear.output=T)
+
+plot(out)
+
+# 예측하기
+#뉴럴넷에서는 predict 대신 compute
+#test도 scale 되어야 하고 변수들만.
+pred=compute(out,test2[,1:13])
+#pred는 스케일된 예측값을 저장 -> 환원 작업 필요
+#pred환원
+nn.pred=pred$net.result*(max(Boston$medv)-min(Boston$medv))+min(Boston$medv)
+#test의y환원
+Bos.test2=(test2$medv)*(max(Boston$medv)-min(Boston$medv))+min(Boston$medv)
+
+par(mfrow=c(1,1))
+plot(Bos.test2,nn.pred)
+abline(0,1)
